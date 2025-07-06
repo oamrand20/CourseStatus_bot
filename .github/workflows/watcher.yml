@@ -1,0 +1,72 @@
+name: Run Jadwali Watcher
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"  # كل 10 دقائق
+  workflow_dispatch:
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install requirements
+        run: pip install -r requirements.txt
+
+      - name: Run script
+        run: |
+          python -c "
+import requests, json, time
+
+BOT_TOKEN = '8177518095:AAEzCPd5m9TeezrI-vkBtNPbR286pldFu8w'
+CHAT_ID = '@tasjeeltasharuk'
+SESSION_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJuYW1lIjoiT21hciBBdHRpZWgiLCJlbWFpbCI6Im9hYXRpZWgyMUBjaXQuanVzdC5lZHUuam8iLCJzdWIiOiI4NmM4YThjZS01YjY1LTQ5MWItOTExNy1kMjNiM2I2ZWFlNDEiLCJyb2xlIjoiU1RVREVOVCIsImZpcnN0TmFtZSI6Ik9tYXIiLCJsYXN0TmFtZSI6IkF0dGllaCIsImlhdCI6MTc1MTc3OTk0NCwiZXhwIjoxNzU0MzcxOTQ0fQ.Hdjx-xGQC2937OT4ETjyy6MPzhoDUvWw7CAoy8ldT0M'
+
+COURSE_IDS = [
+    '821192','801022','821104','841000','2510990','2511010','2511030',
+    '2511080','802000','821531','821052','821360','821004','821002',
+    '821090','821001','822111','822133','822121','822141','821051',
+    '822011','822002','822001','822000','822004'
+]
+
+HEADERS = {
+    'Content-Type': 'application/json',
+    'Cookie': f'authjs.session-token={SESSION_TOKEN}'
+}
+
+PAYLOAD = {
+    'onlyAvailable': False,
+    'coursesLineNumbers': COURSE_IDS,
+    'days': ['sun', 'mon', 'tue', 'wed', 'thu'],
+    'startTime': 8.5,
+    'endTime': 18,
+    'pinnedSections': []
+}
+
+def send_telegram(message):
+    url = f'https://api.telegram.org/bot{BOT_TOKEN}/sendMessage'
+    data = {'chat_id': CHAT_ID, 'text': message, 'parse_mode': 'Markdown'}
+    requests.post(url, data=data)
+
+def main():
+    try:
+        response = requests.post('https://www.jadwali.app/api/generate', headers=HEADERS, json=PAYLOAD)
+        data = response.json()
+        for item in data.get('schedules', []):
+            for section in item.get('sections', []):
+                status = section['status']
+                if status == 'مفتوحة':
+                    msg = f'📢 *مادة مفتوحة!*\n*المادة:* {section["courseName"]}\n*الشعبة:* {section["sectionNumber"]}\n*الحالة:* ✅ مفتوحة\n*الوقت:* {section["time"]}'
+                    send_telegram(msg)
+    except Exception as e:
+        print('❌ Error:', e)
+
+main()
+"
