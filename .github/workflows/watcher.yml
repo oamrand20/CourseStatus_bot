@@ -3,28 +3,25 @@ name: Jadwali Watcher
 on:
   workflow_dispatch:
   schedule:
-    - cron: "*/10 * * * *"  # كل 10 دقائق
+    - cron: "*/10 * * * *"
 
 jobs:
   run-watcher:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Run Jadwali Script
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+
+      - name: Install dependencies
         run: |
           python3 -m pip install requests
 
-          python3 -c "
-import requests, json
-
-BOT_TOKEN = '8177518095:AAEzCPd5m9TeezrI-vkBtNPbR286pldFu8w'
-CHAT_ID = '@tasjeeltasharuk'
-
-def send_telegram(msg):
-    url = f'https://api.telegram.org/bot{BOT_TOKEN}/sendMessage'
-    data = {'chat_id': CHAT_ID, 'text': msg}
-    r = requests.post(url, data=data)
-    print(r.text)
-
-send_telegram('✅ Jadwali Watcher بدأ التشغيل بنجاح!')
-"
+      - name: Run Watcher Script
+        run: |
+          python3 CourseStatus.py
