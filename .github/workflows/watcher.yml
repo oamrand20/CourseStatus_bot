@@ -1,82 +1,30 @@
-name: Run Jadwali Watcher
+name: Jadwali Watcher
 
 on:
-  schedule:
-    - cron: "*/10 * * * *"
   workflow_dispatch:
+  schedule:
+    - cron: "*/10 * * * *"  # كل 10 دقائق
 
 jobs:
-  run-bot:
+  run-watcher:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
-
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-
-      - name: Install requirements
-        run: pip install requests
-
       - name: Run Jadwali Script
         run: |
-          python -c "
+          python3 -m pip install requests
+
+          python3 -c "
 import requests, json
 
 BOT_TOKEN = '8177518095:AAEzCPd5m9TeezrI-vkBtNPbR286pldFu8w'
 CHAT_ID = '@tasjeeltasharuk'
-SESSION_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJuYW1lIjoiT21hciBBdHRpZWgiLCJlbWFpbCI6Im9hYXRpZWgyMUBjaXQuanVzdC5lZHUuam8iLCJzdWIiOiI4NmM4YThjZS01YjY1LTQ5MWItOTExNy1kMjNiM2I2ZWFlNDEiLCJyb2xlIjoiU1RVREVOVCIsImZpcnN0TmFtZSI6Ik9tYXIiLCJsYXN0TmFtZSI6IkF0dGllaCIsImlhdCI6MTc1MTc3OTk0NCwiZXhwIjoxNzU0MzcxOTQ0fQ.Hdjx-xGQC2937OT4ETjyy6MPzhoDUvWw7CAoy8ldT0M'
-
-COURSE_IDS = [
-    '821192','801022','821104','841000','2510990','2511010','2511030',
-    '2511080','802000','821531','821052','821360','821004','821002',
-    '821090','821001','822111','822133','822121','822141','821051',
-    '822011','822002','822001','822000','822004'
-]
-
-HEADERS = {
-    'Content-Type': 'application/json',
-    'Cookie': f'authjs.session-token={SESSION_TOKEN}'
-}
-
-PAYLOAD = {
-    'onlyAvailable': False,
-    'coursesLineNumbers': COURSE_IDS,
-    'days': ['sun', 'mon', 'tue', 'wed', 'thu'],
-    'startTime': 8.5,
-    'endTime': 18,
-    'pinnedSections': []
-}
 
 def send_telegram(msg):
     url = f'https://api.telegram.org/bot{BOT_TOKEN}/sendMessage'
-    data = {'chat_id': CHAT_ID, 'text': msg, 'parse_mode': 'Markdown'}
-    requests.post(url, data=data)
+    data = {'chat_id': CHAT_ID, 'text': msg}
+    r = requests.post(url, data=data)
+    print(r.text)
 
-try:
-    send_telegram('✅ البوت بدأ التشغيل...')
-    response = requests.post('https://www.jadwali.app/api/generate', headers=HEADERS, json=PAYLOAD)
-    data = response.json()
-
-    count = 0
-    for item in data.get('schedules', []):
-        for section in item.get('sections', []):
-            if section['status'] == 'مفتوحة':
-                msg = (
-                    f'📢 *مادة مفتوحة!*\n'
-                    f'*المادة:* {section["courseName"]}\n'
-                    f'*الشعبة:* {section["sectionNumber"]}\n'
-                    f'*الحالة:* ✅ مفتوحة\n'
-                    f'*الوقت:* {section["time"]}'
-                )
-                send_telegram(msg)
-                count += 1
-
-    if count == 0:
-        send_telegram('ℹ️ لا يوجد مواد مفتوحة حالياً.')
-
-except Exception as e:
-    send_telegram(f'❌ حدث خطأ أثناء التشغيل:\n`{e}`')
+send_telegram('✅ Jadwali Watcher بدأ التشغيل بنجاح!')
 "
